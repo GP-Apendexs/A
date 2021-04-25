@@ -67,7 +67,7 @@ int Nutr_Off_Time = 10;
 int val = 1;
 unsigned long Nutr_previousMillis = 0;
 void LCDprint(String NetName, String ip) {
-if (LCDFlipPage) {
+ if (LCDFlipPage) {
  lcd.clear();
  if (ConnectionMode)
  lcd.print("Network Name:");
@@ -381,7 +381,7 @@ void setup() {
  }
  server.begin();
  String conf = Read_file("/conf.txt");
- ConnectionMode = conf.substring(conf.indexOf(">")+ 1, conf.lastIndexOf(">")).toInt();
+ ConnectionMode = conf.substring(conf.indexOf(">") + 1, conf.lastIndexOf(">")).toInt();
  Wname = conf.substring(conf.indexOf("=") + 1, conf.lastIndexOf("="));
  Wpass = conf.substring(conf.indexOf(":") + 1, conf.lastIndexOf(":"));
  Connection_State = conf.substring(conf.indexOf("?") + 1, conf.lastIndexOf("?")).toInt();
@@ -397,7 +397,7 @@ void setup() {
  Serial.println(stemp + shumi + day + sPH + SetRec + sA + sB1 + sB2);
  Current_time_counting = (Read_file("/Time.txt")).toInt();
  LCDloading();
- server.on("/bootstrap.min.css", HTTP_GET, [](AsyncWebServerRequest * request){
+ server.on("/bootstrap.min.css", HTTP_GET, [](AsyncWebServerRequest * request) {
  request->send(SPIFFS, "/bootstrap.min.css", String());
  });
  server.on("/jquery.min.js", HTTP_GET, [](AsyncWebServerRequest * request) {
@@ -413,7 +413,9 @@ void setup() {
  ESP.restart();
  });
  server.on("/update", HTTP_GET, [](AsyncWebServerRequest * request) {
- request->send(200, "text/plain", "rtemp.setValue(" + rtemp + "<=35?" + rtemp + ":35);rhumi.setValue(" + rhumi + "<=100?" + rhumi + ":100);rPH.setValue("+ rPH + "<=14?"+ rPH + ":14);rtempESP=" + rtemp + ";rhumiESP=" + rhumi + ";rPHESP=" + rPH + ";");
+ request->send(200, "text/plain", "rtemp.setValue(" + rtemp + "<=35?" + rtemp + ""
+ ":35);rhumi.setValue(" + rhumi + "<=100?" + rhumi + ":100);rPH.setValue(" + rPH + "<=14?"
+ "" + rPH + ":14);rtempESP=" + rtemp + ";rhumiESP=" + rhumi + ";rPHESP=" + rPH + ";");
  });
  server.on("/set", HTTP_GET, [](AsyncWebServerRequest * request) {
  for (int i = 0; i < request->args(); i++) {
@@ -439,16 +441,16 @@ void setup() {
  sB2 = String(request->arg(i));
  }
  }
- Write_file("/setrec.txt", "stemp>" + stemp + ">shumi=" + shumi + "=day:" + day + ":sPH?"+ sPH + "?A@" + sA + "@B1#" + sB1 + "#B2$" + sB2 + "$" + "SetRec!" + 
- SetRec + "!");
+ Write_file("/setrec.txt", "stemp>" + stemp + ">shumi=" + shumi + "=day:" + day + ":sPH?"
+ "" + sPH + "?A@" + sA + "@B1#" + sB1 + "#B2$" + sB2 + "$" + "SetRec!" + SetRec + "!");
  ml[0] = sA.toInt();
  ml[1] = sB1.toInt();
  ml[2] = sB2.toInt();
  request->send(200, "text/plain", "alert(\"The new setting has been set\")");
  });
  server.on("/recDropdown", HTTP_GET, [](AsyncWebServerRequest * request) {
- request->send(200, "text/plain", "rec_dropdown({" + Read_file("/drec.txt")
- + Read_file("/urec.txt") + "}, '" + SetRec + "');");
+ request->send(200, "text/plain", "rec_dropdown({" + Read_file("/drec.txt") + Read_file(""
+ "/urec.txt") + "}, '" + SetRec + "');");
  });
  server.on("/SetRec", HTTP_GET, [](AsyncWebServerRequest * request) {
  for (int i = 0; i < request->args(); i++) {
@@ -474,8 +476,8 @@ void setup() {
  if (Connection_State == 1) {
  server.on("/GetWiFi", HTTP_GET, [](AsyncWebServerRequest * request) {
  request->send(200, "text/plain", "wifi =[" + s + "]; "
- "document.getElementById(\"ermes\").innerHTML = \"Connection failed please "
- "try again or continue using offline mode\";"
+ "document.getElementById(\"ermes\").innerHTML = \"Connection failed please try again"
+ " or continue using offline mode\";"
  "document.getElementById(\"ermes\").style.color = \"red\";");
  });
  }
@@ -495,8 +497,8 @@ void setup() {
  }
  Serial.println(Wname);
  Serial.println(Wpass);
- Write_file("/conf.txt", "w>" + String(0) + ">ssid=" + Wname + "=pass:" +
- Wpass + ":cs?" + String(0) + "?");
+ Write_file("/conf.txt", "w>" + String(0) + ">ssid=" + Wname + "=pass:" + Wpass + ":cs?"
+ "" + String(0) + "?");
  if (WiFi.softAPdisconnect(true)) {
  ESP.restart(); //reset.
  }
@@ -514,8 +516,7 @@ void setup() {
  Serial.println("Connecting to WiFi..");
  if (i >= 20) {
  Connection_State = 1;
- Write_file("/conf.txt", "w>" + String(1) + ">ssid=null=pass:null:cs?"
- + String(1) + "?");
+ Write_file("/conf.txt", "w>" + String(1) + ">ssid=null=pass:null:cs?" + String(1) + "?");
  ESP.restart();
  }
  i++;
@@ -592,7 +593,7 @@ void setup() {
  digitalWrite(2, OUTBIN_1[1]);
  }
  }
- request->send(200, "text/plain", "console.log(" + String(OUTBIN[0]) + ", " + String(OUTBIN[1]) + ", " + String(OUTBIN[2]) + ", " + String(OUTBIN[3]) +", " + String(OUTBIN[4]) + ", " + String(OUTBIN[5]) + ", " + String(OUTBIN[6])+ ", " + String(OUTBIN[7]) + ", " + String(OUTBIN[8]) + ", " + String(OUTBIN[9])+ ");");
+ request->send(200, "text/plain", "console.log(" + String(OUTBIN[0]) + ", " + String(OUTBIN[1]) + ", " + String(OUTBIN[2]) + ", " + String(OUTBIN[3]) + ", " + String(OUTBIN[4]) + ", " + String(OUTBIN[5]) + ", " + String(OUTBIN[6]) + ", " + String(OUTBIN[7]) + ", " + String(OUTBIN[8]) + ", " + String(OUTBIN[9]) + ");");
  });
 }
 void loop() {
