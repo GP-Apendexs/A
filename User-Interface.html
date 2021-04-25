@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <title>Bootstrap Example</title>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <link rel="stylesheet" href="./bootstrap.min.css">
+ <script src="./jquery.min.js"></script>
+ <script src="./bootstrap.min.js"></script>
+ <script>
+ "use strict";
+ (function (root, factory) {
+ if ((typeof define === 'function') && define.amd) {
+ define([], factory);
+ } else if ((typeof module === 'object') && module.exports) {
+ module.exports = factory();
+ } else {
+ root.pureknob = factory();
+ }
+ }(typeof self !== 'undefined' ? self : this, function () {
+ function PureKnob() {
+ this.createKnob = function (width, height) {
+ const heightString = height.toString();
+ const widthString = width.toString();
+ const smaller = width < height ? width : height;
+ const fontSize = 0.2 * smaller;
+ const fontSizeString = fontSize.toString();
+ const canvas = document.createElement('canvas');
+ const div = document.createElement('div');
+ div.style.display = 'inline-block';
+ div.style.height = heightString + 'px';
+ div.style.position = 'relative';
+ div.style.textAlign = 'center';
+ div.style.width = widthString + 'px';
+ div.appendChild(canvas);
+ const input = document.createElement('input');
+ input.style.appearance = 'textfield';
+ input.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+ input.style.border = 'none';
+ input.style.color = '#ff8800';
+ input.style.fontFamily = 'sans-serif';
+ input.style.fontSize = fontSizeString + 'px';
+ input.style.height = heightString + 'px';
+ input.style.margin = 'auto';
+ input.style.padding = '0px';
+ input.style.textAlign = 'center';
+ input.style.width = widthString + 'px';
+ const inputMode = document.createAttribute('inputmode');
+ inputMode.value = 'numeric';
+ input.setAttributeNode(inputMode);
+ const inputDiv = document.createElement('div');
+ inputDiv.style.bottom = '0px';
+ inputDiv.style.display = 'none';
+ inputDiv.style.left = '0px';
+ inputDiv.style.position = 'absolute';
+ inputDiv.style.right = '0px';
+ inputDiv.style.top = '0px';
+ inputDiv.appendChild(input);
+ div.appendChild(inputDiv);
+ const knob = {
+ '_canvas': canvas,
+ '_div': div,
+ '_height': height,
+ '_input': input,
+ '_inputDiv': inputDiv,
+ '_listeners': [],
+ '_mousebutton': false,
+ '_previousVal': 0,
+ '_timeout': null,
+ '_timeoutDoubleTap': null,
+ '_touchCount': 0,
+ '_width': width,
+ '_notifyUpdate': function () {
+ const properties = this._properties;
+ const value = properties.val;
+ const listeners = this._listeners;
+ const numListeners = listeners.length;
+ for (let i = 0; i < numListeners; i++) {
+ const listener = listeners[i];
+ if (listener !== null) {
+ listener(this, value);
+ }
+ }
+ },
+ '_properties': {
+ 'angleEnd': 0.75 * Math.PI,
+ 'angleOffset': -0.5 * Math.PI,
+ 'angleStart': -0.75 * Math.PI,
+ 'colorBG': '#181818',
+ 'colorFG': '#ff8800',
+ 'colorLabel': '#333',
+ 'fnStringToValue': function (string) {
+ return parseFloat(string);
+ },
+ 'fnValueToString': function (value) {
+ return value.toString();
+ },
+ 'label': null,
+ 'needle': false,
+ 'readonly': false,
+ 'textScale': 1.0,
+ 'trackWidth': 0.4,
+ 'valMin': 0,
+ 'valMax': 100,
+ 'val': 0
+ },
+ 'abort': function () {
+ const previousValue = this._previousVal;
+ const properties = this._properties;
+ properties.val = previousValue;
+ this.redraw();
+ },
+ 'addListener': function (listener) {
+ const listeners = this._listeners;
+ listeners.push(listener);
+ },
+ 'commit': function () {
+ const properties = this._properties;
+ const value = properties.val;
+ this._previousVal = value;
+ this.redraw();
+ this._notifyUpdate();
+ },
+ 'getProperty': function (key) {
+ const properties = this._properties;
+ const value = properties[key];
+ return value;
+ },
+ 'getValue': function () {
+ const properties = this._properties;
+ const value = properties.val;
+ return value;
+ },
+ 'node': function () {
+ const div = this._div;
+ return div;
+ },
+ 'redraw': function () {
+ this.resize();
+ const properties = this._properties;
+ const needle = properties.needle;
+ const angleStart = properties.angleStart;
+ const angleOffset = properties.angleOffset;
+ const angleEnd = properties.angleEnd;
+ const actualStart = angleStart + angleOffset;
+ const actualEnd = angleEnd + angleOffset;
+ const label = properties.label;
+ const value = properties.val;
+ const valueToString = properties.fnValueToString;
+ const valueStr = valueToString(value);
+ const valMin = properties.valMin;
+ const valMax = properties.valMax;
+ const relValue = (value - valMin) / (valMax - valMin);
+ const relAngle = relValue * (angleEnd - angleStart);
+ const angleVal = actualStart + relAngle;
+ const colorTrack = properties.colorBG;
+ const colorFilling = properties.colorFG;
+ const colorLabel = properties.colorLabel;
+ const textScale = properties.textScale;
+ const trackWidth = properties.trackWidth;
+ const height = this._height;
+ const width = this._width;
+ const smaller = width < height ? width : height;
+ const centerX = 0.5 * width;
+ const centerY = 0.5 * height;
+ const radius = 0.4 * smaller;
+ const labelY = centerY + radius;
+ const lineWidth = Math.round(trackWidth * radius);
+ const labelSize = Math.round(0.8 * lineWidth);
+ const labelSizeString = labelSize.toString();
+ const fontSize = (0.2 * smaller) * textScale;
+ const fontSizeString = fontSize.toString();
+ const canvas = this._canvas;
+ const ctx = canvas.getContext('2d');
+ ctx.clearRect(0, 0, width, height);
+ ctx.beginPath();
+ ctx.arc(centerX, centerY, radius, actualStart, actualEnd);
+ ctx.lineCap = 'butt';
+ ctx.lineWidth = lineWidth;
+ ctx.strokeStyle = colorTrack;
+ ctx.stroke();
+ ctx.beginPath();
+ if (needle) {
+ ctx.arc(centerX, centerY, radius, angleVal - 0.1, angleVal + 0.1);
+ } else {
+ ctx.arc(centerX, centerY, radius, actualStart, angleVal);
+ }
+ ctx.lineCap = 'butt';
+ ctx.lineWidth = lineWidth;
+ ctx.strokeStyle = colorFilling;
+ ctx.stroke();
+ ctx.font = fontSizeString + 'px sans-serif';
+ ctx.fillStyle = colorFilling;
+ ctx.textAlign = 'center';
+ ctx.textBaseline = 'middle';
+ ctx.fillText(valueStr, centerX, centerY);
+ if (label !== null) {
+ ctx.font = labelSizeString + 'px sans-serif';
+ ctx.fillStyle = colorLabel;
+ ctx.textAlign = 'center';
+ ctx.textBaseline = 'middle';
+ ctx.fillText(label, centerX, labelY);
+ }
+ const elemInput = this._input;
+ elemInput.style.color = colorFilling;
+ elemInput.style.fontSize = fontSizeString + 'px';
+ },
+ 'resize': function () {
+ const canvas = this._canvas;
+ canvas.style.height = '100%';
+ canvas.style.width = '100%';
+ canvas.height = this._height;
+ canvas.width = this._width;
+ },
+ 'setProperty': function (key, value) {
+ this._properties[key] = value;
+ this.redraw();
+ },
+ 'setValue': function (value) {
+ this.setValueFloating(value);
+ this.commit();
+ },
+ 'setValueFloating': function (value) {
+ const properties = this._properties;
+ const valMin = properties.valMin;
+ const valMax = properties.valMax;
+ if (value < valMin) {
+ value = valMin;
+ } else if (value > valMax) {
+ value = valMax;
+ }
+ value = value.toPrecision(4);
+ this.setProperty('val', value);
+ }
+ };
+ const doubleClickListener = function (e) {
+ const properties = knob._properties;
+ const readonly = properties.readonly;
+ if (!readonly) {
+ e.preventDefault();
+ const inputDiv = knob._inputDiv;
+ inputDiv.style.display = 'block';
+ const inputElem = knob._input;
+ inputElem.focus();
+ knob.redraw();
+ }
+ };
+ const touchStartListener = function (e) {
+ const properties = knob._properties;
+ const readonly = properties.readonly;
+ if (!readonly) {
+ const touches = e.targetTouches;
+ const numTouches = touches.length;
+ const singleTouch = (numTouches === 1);
+ if (singleTouch) {
+ knob._mousebutton = true;
+ if (knob._touchCount === 0) {
+ const f = function () {
+ if (knob._touchCount === 2) {
+ const properties = knob._properties;
+ const readonly = properties.readonly;
+ if (!readonly) {
+ e.preventDefault();
+ const inputDiv = knob._inputDiv;
+ inputDiv.style.display = 'block';
+ const inputElem = knob._input;
+ inputElem.focus();
+ knob.redraw();
+ }
+ }
+ knob._touchCount = 0;
+ };
+ let timeout = knob._timeoutDoubleTap;
+ window.clearTimeout(timeout);
+ timeout = window.setTimeout(f, 500);
+ knob._timeoutDoubleTap = timeout;
+ }
+ knob._touchCount++;
+ }
+ }
+ };
+ const resizeListener = function (e) {
+ knob.redraw();
+ };
+ const keyPressListener = function (e) {
+ const kc = e.keyCode;
+ if ((kc === 13) || (kc === 27)) {
+ const inputDiv = knob._inputDiv;
+ inputDiv.style.display = 'none';
+ const input = e.target;
+ if (kc === 13) {
+ const properties = knob._properties;
+ console.log(input.value);
+ const value = input.value;
+ console.log(value);
+ const stringToValue = properties.fnStringToValue;
+ const val = stringToValue(value);
+ const valid = isFinite(val);
+ if (valid) {
+ knob.setValue(val);
+ }
+ }
+ input.value = '';
+ }
+ };
+ canvas.addEventListener('dblclick', doubleClickListener);
+ canvas.addEventListener('resize', resizeListener);
+ canvas.addEventListener('touchstart', touchStartListener);
+ input.addEventListener('keypress', keyPressListener);
+ return knob;
+ };
+ }
+ return new PureKnob();
+ }));
+ </script>
+ <script>
+ const rtemp = pureknob.createKnob(300, 300);
+ const stemp = pureknob.createKnob(300, 300);
+ const rhumi = pureknob.createKnob(300, 300);
+ const shumi = pureknob.createKnob(300, 300);
+ const day = pureknob.createKnob(300, 300);
+ const rPH = pureknob.createKnob(300, 300);
+ const sPH = pureknob.createKnob(300, 300);
+ const A = pureknob.createKnob(300, 300);
+ const B1 = pureknob.createKnob(300, 300);
+ const B2 = pureknob.createKnob(300, 300);
+ function rtempKnob() {
+ rtemp.setProperty('colorFG', '#8B2B17');
+ rtemp.setProperty('readonly', true);
+ rtemp.setProperty('label', "Degrees");
+ rtemp.setProperty('valmin', "20");
+ rtemp.setProperty('valMax', "35");
+ const node = rtemp.node();
+ const elem = document.getElementById('rtemp');
+ elem.appendChild(node);
+ };
+ function stempKnob() {
+ stemp.setProperty('colorFG', '#FF3004');
+ stemp.setProperty('label', "Degrees");
+ stemp.setProperty('valmin', "20");
+ stemp.setProperty('valMax', "35");
+ const listener = function (stemp, value) {
+ console.log("Pushedtemp is: " + value);
+ Pushedtemp = value;
+ };
+ stemp.addListener(listener);
+ const node = stemp.node();
+ const elem = document.getElementById('stemp');
+ elem.appendChild(node);
+ };
+ function rhumiKnob() {
+ rhumi.setProperty('colorFG', '#0068FF');
+ rhumi.setProperty('readonly', true);
+ rhumi.setProperty('label', "%");
+ const node = rhumi.node();
+ const elem = document.getElementById('rhumi');
+ elem.appendChild(node);
+ };
+ function dayKnob() {
+ day.setProperty('colorFG', '#32CD32');
+ day.setProperty('label', "Hours per Day");
+ day.setProperty('valMax', "24");
+ const listener = function (day, value) {
+ console.log("Pushedday is: " + value);
+ Pushedday = value;
+ };
+ day.addListener(listener);
+ const node = day.node();
+ const elem = document.getElementById('day');
+ elem.appendChild(node);
+ };
+ function shumiKnob() {
+ shumi.setProperty('colorFG', '#154C9C');
+ shumi.setProperty('label', "% ");
+ const listener = function (shumi, value) {
+ console.log("Pushedhumi is: " + value);
+ Pushedhumi = value;
+ };
+ shumi.addListener(listener);
+ const node = shumi.node();
+ const elem = document.getElementById('shumi');
+ elem.appendChild(node);
+ };
+ function rPHKnob() {
+ rPH.setProperty('colorFG', '#808080');
+ rPH.setProperty('label', "%");
+ rPH.setProperty('readonly', true);
+ rPH.setProperty('valmin', "1");
+ rPH.setProperty('valMax', "14");
+ const node = rPH.node();
+ const elem = document.getElementById('rPH');
+ elem.appendChild(node);
+ };
+ function sPHKnob() {
+ sPH.setProperty('colorFG', '#808080');
+ sPH.setProperty('label', "pH");
+ sPH.setProperty('valmin', "0");
+ sPH.setProperty('valMax', "14");
+ const listener = function (sPH, value) {
+ console.log("PushedPH is: " + value);
+ PushedPH = value;
+ };
+ sPH.addListener(listener);
+ const node = sPH.node();
+ const elem = document.getElementById('sPH');
+ elem.appendChild(node);
+ };
+ function AKnob() {
+ A.setProperty('colorFG', '#FFD700');
+ A.setProperty('label', "mL");
+ A.setProperty('valmin', "0");
+ A.setProperty('valMax', "50");
+ const listener = function (A, value) {
+ console.log("PushedA is: " + value);
+ PushedA = value;
+ };
+ A.addListener(listener);
+ const node = A.node();
+ const elem = document.getElementById('A');
+ elem.appendChild(node);
+ };
+ function B1Knob() {
+ B1.setProperty('colorFG', '#FFD700');
+ B1.setProperty('label', "mL");
+ B1.setProperty('valmin', "0");
+ B1.setProperty('valMax', "50");
+ const listener = function (B1, value) {
+ console.log("PushedB1 is: " + value);
+ PushedB1 = value;
+ };
+ B1.addListener(listener);
+ const node = B1.node();
+ const elem = document.getElementById('B1');
+ elem.appendChild(node);
+ };
+ function B2Knob() {
+ B2.setProperty('colorFG', '#FFD700');
+ B2.setProperty('label', "mL");
+ B2.setProperty('valmin', "0");
+ B2.setProperty('valMax', "50");
+ const listener = function (B2, value) {
+ console.log("PushedB2 is: " + value);
+ PushedB2 = value;
+ };
+ B2.addListener(listener);
+ const node = B2.node();
+ const elem = document.getElementById('B2');
+ elem.appendChild(node);
+ };
+ Pushedtemp = 0;
+ Pushedhumi = 0;
+ Pushedday = 0;
+ PushedPH = 0;
+ PushedA = 0;
+ PushedB1 = 0;
+ PushedB2 = 0;
+ Pushedtemp1 = 0;
+ Pushedhumi1 = 0;
+ Pushedday1 = 0;
+ PushedPH1 = 0;
+ PushedA1 = 0;
+ PushedB11 = 0;
+ PushedB21 = 0;
+ function sres(frot) {
+ Pushedtemp1 = recipe[frot].temp;
+ Pushedhumi1 = recipe[frot].humi;
+ Pushedday1 = recipe[frot].day;
+ PushedPH1 = recipe[frot].PH;
+ PushedA1 = recipe[frot].A;
+ PushedB11 = recipe[frot].B1;
+ PushedB21 = recipe[frot].B2;
+ stemp.setValue(recipe[frot].temp);
+ shumi.setValue(recipe[frot].humi);
+ day.setValue(recipe[frot].day);
+ sPH.setValue(recipe[frot].PH);
+ A.setValue(recipe[frot].A);
+ B1.setValue(recipe[frot].B1);
+ B2.setValue(recipe[frot].B2);
+ };
+ </script>
+ <script>
+ recipe = "";
+ SetRec1 = "";
+ function SetRec(frot) {
+ var xhr = new XMLHttpRequest();
+ xhr.onreadystatechange = function () {
+ if (this.readyState != 4) return;
+ if (this.status == 200) {
+ eval(this.responseText);
+ }
+ };
+ xhr.open('GET', "./SetRec?SetRec=" + String(frot), true);
+ xhr.send();
+ };
+ function update() {
+ $.get("./update", function () { }, "jsonp");
+ };
+ function getRecipe() {
+ $.ajax({
+ url: "https://s437000475.github.io/API/", dataType: "text", success: function (data) {
+ var xhr = new XMLHttpRequest();
+ xhr.onreadystatechange = function () {
+ };
+ xhr.open('GET', "./updatedrec?drec=" + data, true);
+ xhr.send();
+ }
+ });
+ };
+ function getRecipeESP() {
+ var xhr = new XMLHttpRequest();
+ xhr.onreadystatechange = function () {
+ if (this.readyState != 4) return;
+ if (this.status == 200) {
+ eval(this.responseText);
+ SetRec(SetRec1);
+ }
+ };
+ xhr.open('GET', "./recDropdown", true);
+ xhr.send();
+ }
+ function GetSetSetting() {
+ var xhr = new XMLHttpRequest();
+ xhr.onreadystatechange = function () {
+ if (this.readyState != 4) return;
+ if (this.status == 200) {
+ eval(this.responseText);
+ }
+ };
+ xhr.open('GET', "./GetSetSetting", true);
+ xhr.send();
+ }
+ function UserRecipes(data, i, ret) {
+ if (ret == 1) {
+ if (Object.values(data)[i].u == 1) {
+ return " <span onclick=\"RecMangRemove('delete recipe." + Object.keys(data)[i] + "');\" style =\"color: red;\">X</span>";
+ } else {
+ return "<span></span>";
+ }
+ } else {
+ temp = '';
+ for (i = 0; Object.keys(data).length > i; i++) {
+ if (Object.values(data)[i].u == 1) {
+ temp = temp + ',"' + Object.keys(data)[i] + '":{"u":1,"temp":' + Object.values(data)[i].temp + ',"humi":' + Object.values(data)[i].humi + ',"day":' + Object.values(data)[i].day + ',"A":' + Object.values(data)[i].A + ',"B1":' + Object.values(data)[i].B1 + ',"B2":' + Object.values(data)[i].B2 + ',"PH":' + Object.values(data)[i].PH + '}';
+ }
+ }
+ console.log(temp);
+ if (temp != "") {
+ var xhr = new XMLHttpRequest();
+ xhr.onreadystatechange = function () {
+ if (this.readyState != 4) return;
+ if (this.status == 200) {
+ eval(this.responseText);
+ }
+ };
+ xhr.open('GET', "./SendUserRecipe?urec=" + temp, true);
+ xhr.send();
+ }
+ }
+ }
+ function rec_dropdown(data, SetRec) {
+ SetRec1 = SetRec;
+ recipe = data;
+ document.getElementById('RecipeDropDown').innerHTML = "";
+ var RecipeDropDown = '';
+ for (i = 1; i < Object.keys(data).length; i++) {
+ RecipeDropDown = RecipeDropDown + "<li><a onclick=\"SetRec('" + Object.keys(data)[i] + "')\">" + Object.keys(data)[i] + "</a></li>" + "\n";
+ }
+ var d1 = document.getElementById('RecipeDropDown');
+ d1.insertAdjacentHTML('beforeend', RecipeDropDown);
+ document.getElementById('recmange').innerHTML = "";
+ var recmange = '<li class="active"><a>Create new recipe<span class="input-group"><input type="text" class="form-control" placeholder="Enter the recipe name" name="RecName" id="RecipeName"><span class="input-group-btn"><button onclick="AddRec();" class="btn btn-default" type="submit"><i class="glyphicon glyphicon-ok"></i></button></span></span></a></li>';
+ for (i = 1; i < Object.keys(recipe).length; i++) {
+ recmange = recmange + "<li><a style=\"display: flex;justify-content: space-between;\"> <span onclick=\"SetRec('" + Object.keys(recipe)[i] + "')\"> " + Object.keys(recipe)[i] + "</span> " + UserRecipes(recipe, i, 1); +"</a></li>" + "\n";
+ }
+ var d1 = document.getElementById('recmange');
+ d1.insertAdjacentHTML('beforeend', recmange);
+ }
+ function RecMangRemove(rec) {
+ eval(rec);
+ rec_dropdown(recipe, SetRec1);
+ }
+ function AddRec() {
+ if (document.getElementById('RecipeName').value != "") {
+ temp = '{"' + document.getElementById('RecipeName').value + '":{"u":1,"temp":' + Pushedtemp + ',"humi":' + Pushedhumi + ',"day":' + Pushedday + ',"A":' + PushedA + ',"B1":' + PushedB1 + ',"B2":' + PushedB2 + ',"PH":' + PushedPH + '}}'
+ Object.assign(recipe, JSON.parse(temp));
+ rec_dropdown(recipe, document.getElementById('RecipeName').value);
+ document.getElementById('RecipeName').value = "";
+ }
+ }
+ function Apply() { 
+ $.get("./set?Pushedtemp=" + String(Pushedtemp) + "&Pushedhumi=" + String(Pushedhumi) + "&Pushedday=" + String(Pushedday) + "&PushedPH=" + String(PushedPH) + "&PushedA=" + String(PushedA) + "&PushedB1=" + String(PushedB1) + "&PushedB2=" + String(PushedB2), function () { }, "jsonp"); 
+ };
+ function Reset() {
+ stemp.setValue(Pushedtemp1);
+ shumi.setValue(Pushedhumi1);
+ day.setValue(Pushedday1);
+ sPH.setValue(PushedPH1);
+ A.setValue(PushedA1);
+ B1.setValue(PushedB11);
+ B2.setValue(PushedB21);
+ };
+ function ready() {
+ rtempKnob();
+ rhumiKnob();
+ rPHKnob();
+ getRecipe();
+ getRecipeESP();
+ update();
+ $("#Manager").hide();
+ window.setInterval(update, 2000);
+ }
+ ; document.addEventListener('DOMContentLoaded', ready, false);
+ function hideLive() {
+ $("#Live").fadeOut(200, function () {
+ $("#Manager").fadeIn(200);
+ $("#NavManager").addClass("active");
+ $("#NavLive").removeClass("active");
+ document.getElementById('page2').innerHTML = '<div class="container-fluid"> <div class="col-lg-3 col-md-4"> <h3>Set Temperature</h3> <p id="stemp"></p> </div> <div class="col-lg-3 col-md-4"> <h3>Set Humidity</h3> <p id="shumi"></p> </div> <div class="col-lg-3 col-md-4"> <h3>Light Duration</h3> <p id="day"></p> </div> <div class="col-lg-3 col-md-4"> <h3>Set pH level</h3> <p id="sPH"></p> </div> </div> <div class="container-fluid"> <div class="col-lg-3 col-md-4"> <h3>Set "A" Solution</h3> <p id="A"></p> </div> <div class="col-lg-3 col-md-4"> <h3>Set "B1" Solution</h3> <p id="B1"></p> </div> <div class="col-lg-3 col-md-4"> <h3>Set "B2" Solution</h3> <p id="B2"></p> </div> </div> <br> <br> <div class="container"> <div class="row"><button onclick="Apply();" type="button" class="btn btn-default pull-right">Apply Recipe</button> <span class="pull-right">&nbsp;&nbsp;&nbsp;&nbsp;</span> <button onclick="Reset();" type="button" class="btn btn-default pull-right">Reset Recipe</button> <span class="pull-right">&nbsp;&nbsp;&nbsp;&nbsp;</span> <button onclick="UserRecipes(recipe,0,0);" type="button" class="btn btn-default pull-right">Save changes</button> </div> </div>';
+ shumiKnob();
+ dayKnob();
+ stempKnob();
+ sPHKnob();
+ AKnob();
+ B1Knob();
+ B2Knob();
+ GetSetSetting();
+ });
+ }
+ function hideManager() {
+ $("#Manager").fadeOut(200, function () {
+ $("#Live").fadeIn(200);
+ $("#NavManager").addClass("active");
+ $("#NavLive").removeClass("active");
+ $("#NavLive").addClass("active");
+ $("#NavManager").removeClass("active");
+ document.getElementById('page2').innerHTML = '';
+ });
+ update();
+ }
+ function ResetSetting() {
+ var xhr = new XMLHttpRequest();
+ xhr.onreadystatechange = function () {
+ if (this.readyState != 4) return;
+ if (this.status == 200) {
+ eval(this.responseText);
+ }
+ };
+ xhr.open('GET', "./ResetSetting", true);
+ xhr.send();
+ }
+ function offline() {
+ var xhr = new XMLHttpRequest();
+ xhr.onreadystatechange = function () {
+ if (this.readyState != 4) return;
+ if (this.status == 200) {
+ eval(this.responseText);
+ }
+ };
+ xhr.open('GET', "./offline", true);
+ xhr.send();
+ }
+ </script>
+</head>
+<style>
+ .flex-box {
+ display: flex;
+ justify-content: space-between;
+ }
+</style>
+<body>
+ <nav class="navbar navbar-default">
+ <div class="container-fluid">
+ <div class="navbar-header">
+ <a class="navbar-brand" href="./index.html">Home Page</a>
+ </div>
+ <ul class="nav navbar-nav">
+ <li id="NavLive" class="active"><a onclick="hideManager();">Live Data</a></li>
+ <li id="NavManager"><a onclick="hideLive();">Recipes Manager</a></li>
+ <li><a onclick="ResetSetting();">Reset Setting</a></li>
+ <li><a class="dropdown-toggle" data-toggle="dropdown"> Select Recipe
+ <span class="caret"></span></a>
+ <ul class="dropdown-menu" id="RecipeDropDown">
+ </ul>
+ </li>
+ </ul>
+ <ul class="nav navbar-nav navbar-right">
+ <li><a onclick="offline();" style="color: red;">You're not connected to the internet, click here to
+ connect</a></li>
+ </ul>
+ </div>
+ </nav>
+ <div class="container" id="Live">
+ <div class="container">
+ <div class="row">
+ <div class="col-md-4">
+ <h3>Current Temperature</h3>
+ <p id="rtemp"></p>
+ </div>
+ <div class="col-md-4">
+ <h3>Current Humidity</h3>
+ <p id="rhumi"></p>
+ </div>
+ <div class="col-md-4">
+ <h3>pH Value</h3>
+ <p id="rPH"></p>
+ </div>
+ </div>
+ </div>
+ </div>
+ <div class="container-fluid" id="Manager">
+ <div class="row">
+ <div class="col-sm-3 col-lg-2">
+ <nav class="navbar navbar-default navbar-fixed-side">
+ <ul class="nav nav-pills nav-stacked red" id="recmange">
+ </ul>
+ </nav>
+ </div>
+ <div class="col-sm-9 col-lg-10">
+ <div class="container-fluid">
+ <div class="row" id="page2">
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+</body>
+</html>
